@@ -1,0 +1,21 @@
+import express from 'express';
+import cors from 'cors';
+import { authRouter } from './modules/auth/auth.routes.js';
+import { departmentsRouter } from './modules/departments/departments.routes.js';
+import { usersRouter } from './modules/users/users.routes.js';
+import { tasksRouter } from './modules/tasks/tasks.routes.js';
+import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
+import { requireAuth } from './middleware/auth.middleware.js';
+import { errorHandler } from './middleware/error.middleware.js';
+
+export const app = express();
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(express.json({ limit: '1mb' }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'ajil-api', database: 'mysql' }));
+app.use('/api/auth', authRouter);
+app.use('/api/departments', requireAuth, departmentsRouter);
+app.use('/api/users', requireAuth, usersRouter);
+app.use('/api/tasks', requireAuth, tasksRouter);
+app.use('/api/dashboard', requireAuth, dashboardRouter);
+app.use((_req, res) => res.status(404).json({ message: 'Endpoint олдсонгүй.' }));
+app.use(errorHandler);

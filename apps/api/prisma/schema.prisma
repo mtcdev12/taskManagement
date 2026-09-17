@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  super_admin
+  manager
+  employee
+}
+
+enum Priority {
+  urgent
+  normal
+  low
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  submitted
+  approved
+  rejected
+}
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  users       User[]
+  tasks       Task[]
+
+  @@map("departments")
+}
+
+model User {
+  id            Int                 @id @default(autoincrement())
+  fullName      String              @map("full_name") @db.VarChar(150)
+  email         String              @unique @db.VarChar(150)
+  passwordHash  String              @map("password_hash") @db.VarChar(255)
+  role          Role
+  departmentId  Int?                @map("department_id")
+  isActive      Boolean             @default(true) @map("is_active")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  department    Department?         @relation(fields: [departmentId], references: [id])
+  assignedTasks Task[]              @relation("Assignee")
+  createdTasks  Task[]              @relation("Creator")
+  reviewedTasks Task[]              @relation("Reviewer")
+  statusChanges TaskStatusHistory[]
+  comments      TaskComment[]
+
+  @@index([departmentId])
+  @@map("users")
+}
+
+model Task {
+  id              Int                 @id @default(autoincrement())
+  title           String              @db.VarChar(200)
+  description     String?             @db.Text
+  departmentId    Int                 @map("department_id")
+  assigneeId      Int?                @map("assignee_id")
+  createdById     Int                 @map("created_by_id")
+  priority        Priority            @default(normal)
+  status          TaskStatus          @default(todo)
+  dueDate         DateTime?           @map("due_date") @db.Date
+  submittedAt     DateTime?           @map("submitted_at")
+  reviewedAt      DateTime?           @map("reviewed_at")
+  reviewedById    Int?                @map("reviewed_by_id")
+  rejectionReason String?             @map("rejection_reason") @db.Text
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  department      Department          @relation(fields: [departmentId], references: [id])
+  assignee        User?               @relation("Assignee", fields: [assigneeId], references: [id])
+  createdBy       User                @relation("Creator", fields: [createdById], references: [id])
+  reviewedBy      User?               @relation("Reviewer", fields: [reviewedById], references: [id])
+  history         TaskStatusHistory[]
+  comments        TaskComment[]
+
+  @@index([departmentId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+model TaskStatusHistory {
+  id          Int         @id @default(autoincrement())
+  taskId      Int         @map("task_id")
+  fromStatus  TaskStatus? @map("from_status")
+  toStatus    TaskStatus  @map("to_status")
+  changedById Int         @map("changed_by_id")
+  comment     String?     @db.Text
+  changedAt   DateTime    @default(now()) @map("changed_at")
+  task        Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedBy   User        @relation(fields: [changedById], references: [id])
+
+  @@index([taskId])
+  @@map("task_status_history")
+}
+
+model TaskComment {
+  id        Int      @id @default(autoincrement())
+  taskId    Int      @map("task_id")
+  userId    Int      @map("user_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@map("task_comments")
+}

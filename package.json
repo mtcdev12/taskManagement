@@ -1,0 +1,18 @@
+{
+  "name": "ajil-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c blue,green \"npm run dev -w @ajil/api\" \"npm run dev -w @ajil/web\"",
+    "build": "npm run build -w @ajil/api && npm run build -w @ajil/web",
+    "typecheck": "npm run typecheck -w @ajil/api && npm run typecheck -w @ajil/web",
+    "db:generate": "npm run db:generate -w @ajil/api",
+    "db:migrate": "npm run db:migrate -w @ajil/api",
+    "db:deploy": "npm run db:deploy -w @ajil/api",
+    "db:seed": "npm run db:seed -w @ajil/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
